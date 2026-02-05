@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>파일 확장자 차단</title>
+    <style>
+        .custom-tag { display: inline-block; border: 1px solid #ccc; padding: 2px 5px; margin: 3px; border-radius: 5px; }
+        .delete-x { cursor: pointer; color: red; margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <h1>파일 확장자 차단</h1>
+
+    <div>
+	    <span>고정 확장자: </span>
+	    <th:block th:each="ext : ${fixedExtensions}">
+	        <label style="margin-right: 10px;">
+	            <input type="checkbox" 
+	                   th:checked="${ext.isChecked}" 
+	                   th:data-name="${ext.name}" 
+	                   onchange="toggleFixed(this.getAttribute('data-name'), this.checked)">
+	            <span th:text="${ext.name}">확장자명</span>
+	        </label>
+	    </th:block>
+	</div>
+
+    <div>
+        커스텀 확장자:
+        <input type="text" id="customInput" maxlength="20" placeholder="확장자 입력">
+        <button onclick="addCustom()">+추가</button>
+    </div>
+
+    <div id="countArea">[[${customExtensions.size()}]]/200</div>
+
+    <div id="customList">
+        <div th:each="ext : ${customExtensions}" class="custom-tag">
+            [[${ext.name}]] <span class="delete-x" 
+							      th:data-id="${ext.id}" 
+							      onclick="deleteCustom(this.getAttribute('data-id'))">X</span>
+        </div>
+    </div>
+
+    <script>
+        function toggleFixed(name, checked) {
+            fetch(`/api/extensions/fixed?name=${name}&checked=${checked}`, { method: 'POST' })
+            .then(() => location.reload());
+        }
+
+        function addCustom() {
+        	const input = document.getElementById('customInput');
+            const name = input.value.trim();
+            
+            // 영문자(대소문자)만 허용하는 정규표현식 
+            const englishOnly = /^[a-zA-Z]+$/;
+
+            if (!name) {
+                alert("확장자를 입력해주세요.");
+                return;
+            }
+
+            if (!englishOnly.test(name)) {
+                alert("확장자는 영문만 입력 가능합니다.");
+                input.value = ""; // 입력값 초기화
+                return;
+            }
+            
+            fetch(`/api/extensions/custom?name=${name}`, { method: 'POST' })
+            .then(res => res.ok ? location.reload() : res.text().then(alert));
+        }
+
+        function deleteCustom(id) {
+            fetch(`/api/extensions/custom/${id}`, { method: 'DELETE' })
+            .then(() => location.reload());
+        }
+    </script>
+</body>
+</html>
